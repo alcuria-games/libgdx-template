@@ -1,0 +1,68 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId 'net.alcuria.bulls'
+        minSdkVersion 14
+        targetSdkVersion 28
+        versionCode 1
+        versionName project.version
+        testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    sourceSets {
+        main {
+            assets {
+                srcDirs = [project.assetsDir]
+            }
+        }
+    }
+}
+
+configurations { natives }
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
+
+task copyNatives {
+    System.out.println("Hello copyNatives")
+    configurations.natives.files.each { file ->
+        System.out.println("Hello ${file.path}")
+        def outputDir = null
+        if (file.name.endsWith('natives-arm64-v8a.jar')) outputDir = new File(projectDir, 'src/main/jniLibs/arm64-v8a')
+        if (file.name.endsWith('natives-armeabi-v7a.jar')) outputDir = new File(projectDir, 'src/main/jniLibs/armeabi-v7a')
+        if (file.name.endsWith('natives-armeabi.jar')) outputDir = new File(projectDir, 'src/main/jniLibs/armeabi')
+        if (file.name.endsWith('natives-x86_64.jar')) outputDir = new File(projectDir, 'src/main/jniLibs/x86_64')
+        if (file.name.endsWith('natives-x86.jar')) outputDir = new File(projectDir, 'src/main/jniLibs/x86')
+
+        if (outputDir != null) {
+            copy {
+                from zipTree(file)
+                into outputDir
+                include '*.so'
+            }
+        }
+    }
+}
+
+assemble.dependsOn copyNatives
